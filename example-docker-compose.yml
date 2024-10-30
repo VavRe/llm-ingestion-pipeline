@@ -1,0 +1,61 @@
+version: "3.9"  # Specify Docker Compose version
+
+services:
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    networks:
+      - news-qa-network
+
+  milvus:
+    image: milvusdb/milvus:latest  # Use the latest Milvus image
+    ports:
+      - "19530:19530"
+      - "19121:19121"
+    networks:
+      - news-qa-network  # Connect to the shared network
+    # ... other Milvus configurations ...
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - news-qa-network
+
+  crawler:
+    build: ./src/crawler  # Build the crawler image
+    # ... other service definitions (converter, chunker, embedder, etc.) ...
+    depends_on:
+      - nats
+      - milvus
+    networks:
+      - news-qa-network
+
+  query-generator:  
+    # ... other configuration for the query generator
+    depends_on:
+      - nats
+      - milvus
+      - llama
+    networks:
+      - news-qa-network 
+
+  llama:
+    # ... LLaMa service definition (likely using a suitable LLaMa image)
+    networks:
+      - news-qa-network
+
+  rag-qa:
+     # ... RAG QA service definition ...
+     depends_on:
+       - milvus
+       - redis
+       - llama  # Depends on LLAMA Service
+     networks:
+       - news-qa-network
+
+networks:
+  news-qa-network: # Define the shared network
